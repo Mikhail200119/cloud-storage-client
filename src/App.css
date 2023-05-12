@@ -1,0 +1,22 @@
+input[type="file"]{
+    display: none;
+}
+
+.upload-file-input {
+    display: flex;
+    margin-top: 10px;
+    justify-content: center;
+    align-items: center;
+    border-radius: 16px;
+    border: 1px green solid;
+    height: 50px;
+    width: 100px;
+    background-color: #6f42c1;
+    font-size: 14px;
+    transition: 0.3s;
+}
+
+.upload-file-input:hover {
+    background-color: white;
+    border: 1px green solid;
+}
