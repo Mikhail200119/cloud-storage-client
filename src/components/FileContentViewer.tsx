@@ -40,12 +40,34 @@ const FileContentViewer = ({
     apiClient.defaults.baseURL +
     file.fileSrc;
 
+  let displayMessage = "The file cannot be displayed";
+  const [isDisplayable, setIsDisplayable] = useState(false);
+  const [notDisplayableMessage, setNotDisplayableMessage] = useState("");
+
+  useEffect(() => {
+    apiClient
+      .get<boolean>(
+        `/api/files/is-displayable-file?contentType=${file.contentType}`
+      )
+      .then((res) => {
+        setIsDisplayable(res.data);
+        console.log("is displayable: ", isDisplayable);
+
+        if (res.data === false) {
+          setLoading(false);
+          setNotDisplayableMessage("The file cannot be displayed");
+        }
+      })
+      .catch((err) => console.log("get is displayable file server error"));
+  }, [file]);
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={() => {
         setDownload(false);
         setLoading(true);
+        setIsDisplayable(false);
         onClose();
       }}
       closeOnEsc={true}
@@ -78,20 +100,26 @@ const FileContentViewer = ({
         <ModalBody>
           {loading && <Spinner size="lg" />}
           <Box>
-            <AspectRatio>
-              <iframe
-                ref={ref}
-                title={file.name}
-                src={apiClient.defaults.baseURL + file.fileSrc}
-                allowFullScreen
-                onLoadStartCapture={() => {
-                  setLoading(true);
-                }}
-                onLoad={() => {
-                  setLoading(false);
-                }}
-              />
-            </AspectRatio>
+            {isDisplayable ? (
+              <AspectRatio>
+                <iframe
+                  ref={ref}
+                  title={file.name}
+                  src={apiClient.defaults.baseURL + file.fileSrc}
+                  allowFullScreen
+                  onLoadStart={() => {
+                    setLoading(true);
+                  }}
+                  onLoad={() => {
+                    setLoading(false);
+                  }}
+                />
+              </AspectRatio>
+            ) : (
+              <Text fontSize={30}>
+                {loading ? "" : "The file cannot be displayed..."}
+              </Text>
+            )}
           </Box>
         </ModalBody>
       </ModalContent>

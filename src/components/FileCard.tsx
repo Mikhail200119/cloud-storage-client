@@ -2,8 +2,11 @@ import { Card, CardBody, HStack, Image, Spinner, Text } from "@chakra-ui/react";
 import { useState } from "react";
 import apiClient from "../apiClient";
 import ExtensionBox from "./ExtensionBox";
-import pdfIcon from "../assets/pdfIcon.png";
-import zipIcon from "../assets/archiveIcon.png";
+import pdfIcon from "../assets/pdf-icon.webp";
+import archiveIcon from "../assets/archive-icon.webp";
+import wordIcon from "../assets/word-icon.webp";
+import documentIcon from "../assets/document-icon.webp";
+import textIcon from "../assets/text-icon.webp";
 
 export interface FileItem {
   id: number;
@@ -64,10 +67,14 @@ const FileCard = ({ file, onSelected, onOpen }: Props) => {
 
           if (file.extension === "pdf") {
             setThumpSrc(pdfIcon);
-          }
-
-          if (file.extension === "zip" || file.fileSrc === "rar") {
-            setThumpSrc(zipIcon);
+          } else if (file.extension === "zip" || file.extension === "rar") {
+            setThumpSrc(archiveIcon);
+          } else if (file.extension === "doc" || file.extension === "docx") {
+            setThumpSrc(wordIcon);
+          } else if (file.extension === "txt") {
+            setThumpSrc(textIcon);
+          } else {
+            setThumpSrc(documentIcon);
           }
         }}
       />
