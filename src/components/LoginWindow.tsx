@@ -13,6 +13,10 @@ interface AuthenticateResponse {
   token: string;
 }
 
+interface Props {
+  onLoggedIn: () => void;
+}
+
 const LoginPage = () => {
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
@@ -21,15 +25,12 @@ const LoginPage = () => {
     event.preventDefault();
 
     apiClient
-      .post<AuthenticateResponse>(
-        "https://localhost:7221/account/authenticate",
-        {
-          email: emailRef.current?.value,
-          password: passwordRef.current?.value,
-        }
-      )
+      .post<AuthenticateResponse>("/account/authenticate", {
+        email: emailRef.current?.value,
+        password: passwordRef.current?.value,
+      })
       .then((res) => {
-        apiClient.defaults.headers.common.Authorization = `Brearer ${res.data.token}`;
+        apiClient.defaults.headers.common.Authorization = `Bearer ${res.data.token}`;
       });
   };
 
@@ -39,7 +40,7 @@ const LoginPage = () => {
         <Input type="text" placeholder="email" />
         <Input type="text" placeholder="password" />
       </InputGroup>
-      <Button type="submit" />
+      <Button type="submit">Log in</Button>
     </form>
   );
 };

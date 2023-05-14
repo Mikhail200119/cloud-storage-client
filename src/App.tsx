@@ -1,4 +1,11 @@
-import { Grid, GridItem, HStack, Text, useDisclosure } from "@chakra-ui/react";
+import {
+  Grid,
+  GridItem,
+  HStack,
+  Spinner,
+  Text,
+  useDisclosure,
+} from "@chakra-ui/react";
 import NavBar from "./components/NavBar";
 import FileGrid from "./components/FileGrid";
 import UploadButton from "./components/UploadButton";
@@ -18,12 +25,16 @@ function App() {
   const [displayedFile, setDisplayedFile] = useState<FileItem | null>(null);
   const [archive, setArchive] = useState<FileItem | null>(null);
   const [isDeleteModal, setDeleteModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    setLoading(true);
+
     apiClient
       .get<FileItem[]>("/api/files")
       .then((res) => {
         setFiles(res.data);
+        setLoading(false);
       })
       .catch((err) => console.log(err));
   }, []);
@@ -66,7 +77,10 @@ function App() {
       {displayedFile && (
         <FileContentViewer
           file={displayedFile}
-          onClose={onFileViewerClose}
+          onClose={() => {
+            onFileViewerClose();
+            setDisplayedFile(null);
+          }}
           isOpen={isFileViewerOpen}
         />
       )}
@@ -112,9 +126,12 @@ function App() {
           <NavBar onSearchInput={onSearchInput} />
         </GridItem>
         <GridItem area="main">
-          {files.length === 0 && (
-            <Text fontSize={18}>No files uploaded...</Text>
+          {files.length === 0 && !loading && (
+            <Text marginTop={30} fontSize={25}>
+              No files uploaded...
+            </Text>
           )}
+          {loading && <Spinner marginTop={30} />}
           <FileGrid
             onClick={(file, selected) => {
               if (!selected) {

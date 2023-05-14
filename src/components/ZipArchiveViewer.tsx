@@ -83,6 +83,7 @@ const ZipArchiveViewer = ({
     <>
       {displayedFile && (
         <FileContentViewer
+          isUnzipFile={true}
           onClose={onContentClose}
           isOpen={isContentOpen}
           file={displayedFile}

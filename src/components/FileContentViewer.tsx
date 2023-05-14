@@ -42,20 +42,27 @@ const FileContentViewer = ({
 
   let displayMessage = "The file cannot be displayed";
   const [isDisplayable, setIsDisplayable] = useState(false);
-  const [notDisplayableMessage, setNotDisplayableMessage] = useState("");
 
   useEffect(() => {
+    if (file === null) {
+      return;
+    }
+
+    console.log("file name: ", file.name);
+    console.log("is unzip: ", isUnzipFile);
+
+    const url = isUnzipFile
+      ? `/api/files/is-displayable-archive-file?archiveFilePath=${file.name}`
+      : `/api/files/is-displayable-file?contentType=${file.contentType}`;
+
     apiClient
-      .get<boolean>(
-        `/api/files/is-displayable-file?contentType=${file.contentType}`
-      )
+      .get<boolean>(url)
       .then((res) => {
         setIsDisplayable(res.data);
         console.log("is displayable: ", isDisplayable);
 
         if (res.data === false) {
           setLoading(false);
-          setNotDisplayableMessage("The file cannot be displayed");
         }
       })
       .catch((err) => console.log("get is displayable file server error"));
