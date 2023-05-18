@@ -17,6 +17,7 @@ import {
 import apiClient from "../apiClient";
 import FileContentViewer from "./FileContentViewer";
 import DownloadButton from "./DownloadButton";
+import fileDownload from "js-file-download";
 
 interface Props {
   file: FileItem;
@@ -36,6 +37,7 @@ const ZipArchiveViewer = ({
   const [archiveFiles, setFiles] = useState<string[]>([]);
   const [displayedFile, setDisplayedFile] = useState<FileItem | null>(null);
   const [download, setDownload] = useState(false);
+  const [downloadUrl, setDownloadUrl] = useState("");
   const [src, setSrc] = useState("");
 
   const {
@@ -54,7 +56,7 @@ const ZipArchiveViewer = ({
     onContentOpen();
     setSrc(`/api/files/archive/unzip-file/${file.id}/${archiveFile}`);
     const f: FileItem = {
-      id: 0,
+      id: file.id,
       name: archiveFile,
       fileSrc: `/api/files/archive/unzip-file/${file.id}/${archiveFile}`,
       thumbnailSrc: "",
@@ -74,7 +76,6 @@ const ZipArchiveViewer = ({
       )
       .then((res) => {
         setFiles(res.data);
-        console.log(res.data);
       })
       .catch((err) => console.log(err));
   }, []);
@@ -104,16 +105,25 @@ const ZipArchiveViewer = ({
             {file.name}
             <DownloadButton
               onClick={() => {
-                setSrc(
-                  apiClient.defaults.baseURL + `/api/files/download/${file.id}`
-                );
-                setDownload(true);
+                apiClient
+                  .get(`/api/files/download/${file.id}`, {
+                    responseType: "blob",
+                  })
+                  .then((res) =>
+                    fileDownload(
+                      res.data,
+                      file.name,
+                      res.headers["content-type"]
+                    )
+                  )
+                  .catch(() =>
+                    console.log("Error during downloading an archive")
+                  );
               }}
             />
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            {download && <iframe style={{ display: "none" }} src={src} />}
             <List spacing="1">
               {archiveFiles.map((f) => (
                 <ListItem key={f}>
@@ -163,13 +173,26 @@ const ZipArchiveViewer = ({
                       )}
                       <DownloadButton
                         onClick={() => {
-                          setSrc(
-                            apiClient.defaults.baseURL +
+                          apiClient
+                            .get(
                               `/api/files/download/archive-file/${
                                 file.id
-                              }/${encodeSlash(f)}`
-                          );
-                          setDownload(true);
+                              }/${encodeSlash(f)}`,
+                              { responseType: "blob" }
+                            )
+                            .then((res) => {
+                              fileDownload(
+                                res.data,
+                                f.substring(f.lastIndexOf("/") + 1),
+                                res.headers["content-type"]
+                              );
+                            })
+                            .catch((err) =>
+                              console.log(
+                                "error during downloading archive file: ",
+                                err
+                              )
+                            );
                         }}
                       />
                     </HStack>

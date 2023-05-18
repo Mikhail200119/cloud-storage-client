@@ -1,5 +1,5 @@
 import { Card, CardBody, HStack, Image, Spinner, Text } from "@chakra-ui/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import apiClient from "../apiClient";
 import ExtensionBox from "./ExtensionBox";
 import pdfIcon from "../assets/pdf-icon.webp";
@@ -7,6 +7,7 @@ import archiveIcon from "../assets/archive-icon.webp";
 import wordIcon from "../assets/word-icon.webp";
 import documentIcon from "../assets/document-icon.webp";
 import textIcon from "../assets/text-icon.webp";
+import { useNavigate } from "react-router-dom";
 
 export interface FileItem {
   id: number;
@@ -28,9 +29,7 @@ interface Props {
 const FileCard = ({ file, onSelected, onOpen }: Props) => {
   const [isLoading, setLoading] = useState(true);
   const [isSelected, setSelected] = useState(false);
-  const [thumbSrc, setThumpSrc] = useState(
-    apiClient.defaults.baseURL + file.thumbnailSrc
-  );
+  const [thumbSrc, setThumpSrc] = useState("");
 
   const handleCardClick = () => {
     let selected = false;
@@ -45,6 +44,34 @@ const FileCard = ({ file, onSelected, onOpen }: Props) => {
 
     onSelected(file, selected);
   };
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    apiClient
+      .get(apiClient.defaults.baseURL + file.thumbnailSrc, {
+        headers: {
+          Authorization: apiClient.defaults.headers.common.Authorization,
+        },
+        responseType: "blob",
+      })
+      .then((res) => {
+        console.log("file name: ", file.name);
+
+        setThumpSrc(
+          URL.createObjectURL(
+            new File([res.data], file.name, { type: file.contentType })
+          )
+        );
+      })
+      .catch((err) => {
+        console.log("get thumbnail error");
+
+        if (err.response.status === 401) {
+          navigate("/sign-in");
+        }
+      });
+  }, [file]);
 
   return (
     <Card

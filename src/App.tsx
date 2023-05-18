@@ -1,203 +1,62 @@
-import {
-  Grid,
-  GridItem,
-  HStack,
-  Spinner,
-  Text,
-  useDisclosure,
-} from "@chakra-ui/react";
+import React, { useState } from "react";
+import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
+import LoginWindow from "./components/LoginWindow";
 import NavBar from "./components/NavBar";
-import FileGrid from "./components/FileGrid";
-import UploadButton from "./components/UploadButton";
+import RegisterWindow from "./components/RegisterWindow";
+import FilesPage from "./components/FilesPage";
+import LogoutWindow from "./components/LogoutWindow";
 import apiClient from "./apiClient";
-import { useEffect, useState } from "react";
-import { FileItem } from "./components/FileCard";
-import DeleteButton from "./components/DeleteButton";
-import AlertMessage from "./components/AlertMessage";
-import FileContentViewer from "./components/FileContentViewer";
-import ZipArchiveViewer from "./components/ZipArchiveViewer";
-import DownloadButton from "./components/DownloadButton";
 
-function App() {
-  const [files, setFiles] = useState<FileItem[]>([]);
-  const [filesToDelete, setFilesToDelete] = useState<FileItem[]>([]);
-  const [alertVisible, setAlertVisible] = useState(false);
-  const [displayedFile, setDisplayedFile] = useState<FileItem | null>(null);
-  const [archive, setArchive] = useState<FileItem | null>(null);
-  const [isDeleteModal, setDeleteModalOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    setLoading(true);
-
-    apiClient
-      .get<FileItem[]>("/api/files")
-      .then((res) => {
-        setFiles(res.data);
-        setLoading(false);
-      })
-      .catch((err) => console.log(err));
-  }, []);
-
-  const {
-    isOpen: isFileViewerOpen,
-    onOpen: onFileViewerOpen,
-    onClose: onFileViewerClose,
-  } = useDisclosure();
-
-  const {
-    isOpen: isDeleteModalOpen,
-    onOpen: onDeleteModalOpen,
-    onClose: onDeleteModalClose,
-  } = useDisclosure();
-
-  const { isOpen: isDeleteButtonOpen, onToggle: onDeleteButtonToggle } =
-    useDisclosure();
-
-  const {
-    isOpen: isArchiveFileListOpen,
-    onOpen: onArchiveFileListOpen,
-    onClose: onArchiveFileListClose,
-  } = useDisclosure();
-
-  const onSearchInput = (searchText: string) => {
-    apiClient
-      .get<FileItem[]>("/api/files/search", {
-        params: {
-          Name: searchText,
-          Extension: null,
-        },
-      })
-      .then((res) => setFiles(res.data))
-      .catch((err) => console.log(err));
-  };
+const App = () => {
+  const [userEmail, setUserEmail] = useState("");
 
   return (
     <>
-      {displayedFile && (
-        <FileContentViewer
-          file={displayedFile}
-          onClose={() => {
-            onFileViewerClose();
-            setDisplayedFile(null);
-          }}
-          isOpen={isFileViewerOpen}
-        />
-      )}
-      {archive && (
-        <ZipArchiveViewer
-          isOpen={isArchiveFileListOpen}
-          onClose={() => {
-            onArchiveFileListClose();
-            setArchive(null);
-          }}
-          file={archive}
-          onArchiveFileOpen={() => null}
-          onUploadFile={(file) => {
-            setFiles([...files, file]);
-          }}
-        />
-      )}
-      {/* <ConfirmDeleteModal onClose={onDeleteModalClose} isOpen={isDeleteModal} /> */}
-      {alertVisible && (
-        <AlertMessage
-          status="success"
-          onDissapear={() => setAlertVisible(false)}
-        >
-          Success
-        </AlertMessage>
-      )}
-      <Grid
-        templateAreas={{
-          base: `"nav" "main" "operation"`,
-        }}
-        margin={10}
-      >
-        <GridItem
-          area="nav"
-          style={{
-            position: "fixed",
-            overflow: "hidden",
-            top: 0,
-            width: "90%",
-            zIndex: 2,
-          }}
-        >
-          <NavBar onSearchInput={onSearchInput} />
-        </GridItem>
-        <GridItem area="main">
-          {files.length === 0 && !loading && (
-            <Text marginTop={30} fontSize={25}>
-              No files uploaded...
-            </Text>
-          )}
-          {loading && <Spinner marginTop={30} />}
-          <FileGrid
-            onClick={(file, selected) => {
-              if (!selected) {
-                setFilesToDelete(
-                  [...filesToDelete].filter((f) => f.id !== file.id)
-                );
-
-                if (filesToDelete.length === 0 && isDeleteButtonOpen) {
-                  onDeleteButtonToggle();
-                }
-              } else {
-                setFilesToDelete([...filesToDelete, file]);
-
-                if (!isDeleteButtonOpen) {
-                  onDeleteButtonToggle();
-                }
-              }
+      <BrowserRouter>
+        <div>
+          <div
+            style={{
+              position: "fixed",
+              width: "100%",
+              top: 0,
+              zIndex: 3,
             }}
-            onDoubleClick={(file) => {
-              if (file.extension === "zip") {
-                setArchive(file);
-                onArchiveFileListOpen();
-              } else {
-                setDisplayedFile(file);
-                onFileViewerOpen();
-              }
-            }}
-            files={files}
-          />
-        </GridItem>
-        <GridItem
-          style={{
-            position: "fixed",
-            overflow: "hidden",
-            bottom: 15,
-            width: "90%",
-            zIndex: 2,
-          }}
-          area="operation"
-        >
-          <HStack>
-            <UploadButton
-              onUpload={(uploadedFiles) => {
-                setFiles([...files].concat(uploadedFiles));
-                setAlertVisible(true);
-              }}
-            />
-            {filesToDelete.length > 0 && (
-              <>
-                <DeleteButton
-                  isOpen={isDeleteButtonOpen}
-                  filesToDelete={filesToDelete}
-                  onFileDeleted={() => {
-                    setFiles(
-                      [...files].filter((f) => !filesToDelete.includes(f))
-                    );
-                    setFilesToDelete([]);
+          >
+            <NavBar userEmail={userEmail} />
+          </div>
+          <Routes>
+            <Route path="/" element={<FilesPage />}></Route>
+            <Route
+              path="/sign-in"
+              element={
+                <LoginWindow
+                  email={userEmail}
+                  onLoggedIn={(email) => {
+                    setUserEmail(email);
                   }}
                 />
-              </>
-            )}
-          </HStack>
-        </GridItem>
-      </Grid>
+              }
+            ></Route>
+            <Route
+              path="/sign-up"
+              element={<RegisterWindow onRegistered={(email) => {}} />}
+            ></Route>
+            <Route
+              path="/log-out"
+              element={
+                <LogoutWindow
+                  onLoggedOut={() => {
+                    setUserEmail("");
+                    apiClient.defaults.headers.common.Authorization = "";
+                  }}
+                />
+              }
+            ></Route>
+          </Routes>
+        </div>
+      </BrowserRouter>
     </>
   );
-}
+};
 
 export default App;

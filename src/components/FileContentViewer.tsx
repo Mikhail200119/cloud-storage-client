@@ -18,6 +18,9 @@ import { useEffect, useRef, useState } from "react";
 import { FileItem } from "./FileCard";
 import apiClient from "../apiClient";
 import DownloadButton from "./DownloadButton";
+import axios from "axios";
+import fileDownload from "js-file-download";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   isUnzipFile?: boolean;
@@ -33,23 +36,21 @@ const FileContentViewer = ({
   onClose,
 }: Props) => {
   const [loading, setLoading] = useState(true);
-  const [download, setDownload] = useState(false);
+  const [downloadUrl, setDownloadUrl] = useState("");
+  const [contentUrl, setContentUrl] = useState("");
   const ref = useRef<HTMLIFrameElement>(null);
-  const url =
-    `data:${file.contentType};charset=utf-8,` +
-    apiClient.defaults.baseURL +
-    file.fileSrc;
+  const url = apiClient.defaults.baseURL + file.fileSrc;
 
-  let displayMessage = "The file cannot be displayed";
   const [isDisplayable, setIsDisplayable] = useState(false);
+
+  console.log("src: ", apiClient.defaults.baseURL);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (file === null) {
       return;
     }
-
-    console.log("file name: ", file.name);
-    console.log("is unzip: ", isUnzipFile);
 
     const url = isUnzipFile
       ? `/api/files/is-displayable-archive-file?archiveFilePath=${file.name}`
@@ -59,20 +60,45 @@ const FileContentViewer = ({
       .get<boolean>(url)
       .then((res) => {
         setIsDisplayable(res.data);
-        console.log("is displayable: ", isDisplayable);
 
         if (res.data === false) {
           setLoading(false);
         }
       })
-      .catch((err) => console.log("get is displayable file server error"));
+      .catch((err) => {
+        console.log("get is displayable file server error");
+
+        if (err.response.status === 401) {
+          navigate("/sign-in");
+        }
+      });
+
+    axios
+      .get(apiClient.defaults.baseURL + file.fileSrc, {
+        headers: {
+          Authorization: apiClient.defaults.headers.common.Authorization,
+        },
+        responseType: "blob",
+      })
+      .then((res) => {
+        setContentUrl(
+          URL.createObjectURL(
+            new File([res.data], file.name, {
+              type: res.headers["content-type"],
+            })
+          )
+        );
+      })
+      .catch(() => {
+        console.log("get stream blob error");
+        navigate("/sign-in");
+      });
   }, [file]);
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={() => {
-        setDownload(false);
         setLoading(true);
         setIsDisplayable(false);
         onClose();
@@ -89,19 +115,28 @@ const FileContentViewer = ({
             {
               <DownloadButton
                 onClick={() => {
-                  setDownload(true);
+                  const downloadUrl = isUnzipFile
+                    ? `/api/files/download/archive-file/${file.id}/${file.name}`
+                    : `/api/files/download/${file.id}`;
+
+                  apiClient
+                    .get(downloadUrl, {
+                      responseType: "blob",
+                    })
+                    .then((res) => {
+                      fileDownload(
+                        res.data,
+                        file.name,
+                        res.headers["content-type"]
+                      );
+                    })
+                    .catch((err) =>
+                      console.log("Error download file: ", err.message)
+                    );
                 }}
               />
             }
           </HStack>
-          {download && (
-            <iframe
-              style={{ display: "none" }}
-              src={
-                apiClient.defaults.baseURL + `/api/files/download/${file.id}`
-              }
-            />
-          )}
         </ModalHeader>
         <ModalCloseButton />
         <ModalBody>
@@ -112,7 +147,7 @@ const FileContentViewer = ({
                 <iframe
                   ref={ref}
                   title={file.name}
-                  src={apiClient.defaults.baseURL + file.fileSrc}
+                  src={contentUrl}
                   allowFullScreen
                   onLoadStart={() => {
                     setLoading(true);
@@ -122,10 +157,12 @@ const FileContentViewer = ({
                   }}
                 />
               </AspectRatio>
-            ) : (
+            ) : contentUrl.length !== 0 ? (
               <Text fontSize={30}>
                 {loading ? "" : "The file cannot be displayed..."}
               </Text>
+            ) : (
+              <Text fontSize={30}>{loading ? "" : "Error..."}</Text>
             )}
           </Box>
         </ModalBody>

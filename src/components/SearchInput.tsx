@@ -19,13 +19,19 @@ const SearchInput = ({ onSearchInput }: Props) => {
         }
       }}
     >
-      <InputGroup marginTop="10px">
+      <InputGroup
+        marginTop="10px"
+        backgroundColor="white"
+        borderRadius={15}
+        width={500}
+        border="1px solid gray"
+      >
         <InputLeftElement children={<BsSearch />} />
         <Input
           name="Name"
           ref={ref}
           borderRadius={15}
-          placeholder="Search..."
+          placeholder="Search files..."
           variant="filled"
         />
       </InputGroup>

@@ -1,6 +1,23 @@
 import React, { FormEvent, useRef, useState } from "react";
 import apiClient from "../apiClient";
-import { InputGroup, Input, Button, Text, HStack } from "@chakra-ui/react";
+import {
+  InputGroup,
+  Input,
+  Button,
+  Text,
+  HStack,
+  Box,
+  Grid,
+  GridItem,
+} from "@chakra-ui/react";
+import { useNavigate } from "react-router-dom";
+import z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+
+const passwordRegex = new RegExp(
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*d)[a-zA-Zd]{8,}$/
+);
 
 interface RegisterResponse {
   email: string;
@@ -10,105 +27,126 @@ interface Props {
   onRegistered: (email: string) => void;
 }
 
-interface RegisterState {
-  emailMessage: string;
-  firstPasswordMessage: string;
-  secondPasswordMessage: string;
-}
-
-const RegisterWindow = ({ onRegistered }: Props) => {
-  const emailRef = useRef<HTMLInputElement>(null);
-  const firstPasswordRef = useRef<HTMLInputElement>(null);
-  const secondPasswordRef = useRef<HTMLInputElement>(null);
-
-  const [registerState, setRegisterState] = useState<RegisterState>({
-    emailMessage: "",
-    firstPasswordMessage: "",
-    secondPasswordMessage: "",
+const FormSchema = z
+  .object({
+    email: z.string().email({ message: "Invalid email." }),
+    password: z
+      .string()
+      .min(8, "Password should be at least 8 chars")
+      .max(15, "Password should be max 15 chars"),
+    confirmPassword: z.string(),
+    //.regex(passwordRegex, { message: "Invalid password" }),
+  })
+  .refine((data) => data.confirmPassword === data.password, {
+    message: "Password did not match.",
   });
 
-  const onFormSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+type FormInput = z.infer<typeof FormSchema>;
 
-    if (emailRef.current?.value.length === 0) {
-      setRegisterState({ ...registerState, emailMessage: "Required" });
-      return;
-    } else {
-      setRegisterState({ ...registerState, emailMessage: "" });
-    }
+const RegisterWindow = ({ onRegistered }: Props) => {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormInput>({
+    resolver: zodResolver(FormSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
 
-    if (firstPasswordRef.current?.value.length === 0) {
-      setRegisterState({ ...registerState, firstPasswordMessage: "Required" });
-      return;
-    } else {
-      setRegisterState({ ...registerState, firstPasswordMessage: "" });
-    }
+  const navigate = useNavigate();
 
-    if (secondPasswordRef.current?.value.length === 0) {
-      setRegisterState({ ...registerState, secondPasswordMessage: "Required" });
-    } else {
-      setRegisterState({ ...registerState, secondPasswordMessage: "" });
-    }
-
-    if (firstPasswordRef.current?.value !== secondPasswordRef.current?.value) {
-      setRegisterState({
-        ...registerState,
-        secondPasswordMessage: "Different passwords",
-      });
-    } else {
-      setRegisterState({ ...registerState, secondPasswordMessage: "" });
-    }
-
-    if (
-      registerState.emailMessage === "" &&
-      registerState.firstPasswordMessage === "" &&
-      registerState.secondPasswordMessage === ""
-    ) {
-      apiClient
-        .post<RegisterResponse>("/account/register", {
-          email: emailRef.current?.value,
-          password: firstPasswordRef.current?.value,
-        })
-        .then(() => {
-          if (emailRef.current?.value === undefined) {
-            return;
-          }
-
-          onRegistered(emailRef.current.value);
-        })
-        .catch(() => console.log("Register error"));
-    }
+  const onFormSubmit = (data: FormInput) => {
+    apiClient
+      .post<RegisterResponse>("/api/account/register", {
+        email: data.email,
+        password: data.password,
+      })
+      .then(() => {
+        onRegistered(data.email);
+        navigate("/sign-in");
+      })
+      .catch((ex: Error) => console.log("Register error: ", ex));
   };
 
   return (
     <>
-      <form onSubmit={onFormSubmit}>
-        <InputGroup>
-          <HStack>
-            <Input type="text" placeholder="email" />
-            {registerState.emailMessage.length > 0 && (
-              <Text colorScheme="red">{registerState.emailMessage}</Text>
-            )}
-          </HStack>
-          <HStack>
-            <Input type="password" placeholder="password" />
-            {registerState.firstPasswordMessage.length > 0 && (
-              <Text colorScheme="red">
-                {registerState.firstPasswordMessage}
-              </Text>
-            )}
-          </HStack>
-          <HStack>
-            <Input type="password" placeholder="repeat password" />
-            {registerState.secondPasswordMessage.length > 0 && (
-              <Text colorScheme="red">
-                {registerState.secondPasswordMessage}
-              </Text>
-            )}
-          </HStack>
-        </InputGroup>
-        <Button type="submit">Sign up</Button>
-      </form>
+      <div style={{ marginTop: "60px" }}>
+        <form onSubmit={handleSubmit(onFormSubmit)}>
+          <InputGroup>
+            <Box
+              userSelect="none"
+              backgroundColor="gray.300"
+              marginLeft={450}
+              marginTop={100}
+              border="1px solid red"
+              borderRadius={50}
+              width={400}
+            >
+              <Grid
+                templateAreas={{
+                  base: `"text" "login" "password1" "password2" "button"`,
+                }}
+                margin={10}
+              >
+                <GridItem style={{ marginLeft: "100px" }} area="text">
+                  <Text colorScheme="purple" fontSize={30}>
+                    Sign Up
+                  </Text>
+                </GridItem>
+                <GridItem style={{ marginTop: "20px" }} area="login">
+                  <Input
+                    border="1px solid black"
+                    backgroundColor="whatsapp.50"
+                    borderRadius="20px"
+                    type="text"
+                    placeholder="email"
+                    {...register("email")}
+                  />
+                  {errors?.email?.message && <p>{errors.email.message}</p>}
+                </GridItem>
+                <GridItem style={{ marginTop: "10px" }} area="password1">
+                  <Input
+                    border="1px solid black"
+                    backgroundColor="whatsapp.50"
+                    borderRadius="20px"
+                    type="password"
+                    placeholder="password"
+                    {...register("password")}
+                  />
+                  {errors?.password?.message && (
+                    <p>{errors.password.message}</p>
+                  )}
+                </GridItem>
+                <GridItem style={{ marginTop: "10px" }} area="password2">
+                  <Input
+                    border="1px solid black"
+                    backgroundColor="whatsapp.50"
+                    borderRadius="20px"
+                    type="password"
+                    placeholder="confirm password"
+                    {...register("confirmPassword")}
+                  />
+                  {errors?.confirmPassword?.message && (
+                    <p>{errors.confirmPassword.message}</p>
+                  )}
+                </GridItem>
+                <GridItem
+                  style={{ marginTop: "30px", marginLeft: "110px" }}
+                  area="button"
+                >
+                  <Button type="submit" backgroundColor="green.500">
+                    Sign Up
+                  </Button>
+                </GridItem>
+              </Grid>
+            </Box>
+          </InputGroup>
+        </form>
+      </div>
     </>
   );
 };

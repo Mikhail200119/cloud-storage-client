@@ -20,13 +20,20 @@ const DeleteButton = ({
 
   const handleDelete = () => {
     apiClient
-      .delete(`/api/files?${buildQueryString(filesToDelete.map((f) => f.id))}`)
+      .delete(
+        `/api/files?${buildQueryString(filesToDelete.map((f) => f.id))}`,
+        {
+          headers: {
+            Authorization: apiClient.defaults.headers.common.Authorization,
+          },
+        }
+      )
       .then((res) => {
         if (res.status === 200) {
           onFileDeleted();
         }
       })
-      .catch((err) => console.log(err));
+      .catch((err) => console.log("error on deliting files"));
   };
 
   return (
