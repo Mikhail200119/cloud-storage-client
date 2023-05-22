@@ -17,6 +17,7 @@ import FileContentViewer from "./FileContentViewer";
 import ZipArchiveViewer from "./ZipArchiveViewer";
 import SearchInput from "./SearchInput";
 import { useNavigate } from "react-router-dom";
+import DiskUsageBox from "./DiskUsageBox";
 
 function FilesPage() {
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -175,26 +176,29 @@ function FilesPage() {
           }}
           area="operation"
         >
-          <HStack>
-            <UploadButton
-              onUpload={(uploadedFiles) => {
-                setFiles([...files].concat(uploadedFiles));
-              }}
-            />
-            {filesToDelete.length > 0 && (
-              <>
-                <DeleteButton
-                  isOpen={isDeleteButtonOpen}
-                  filesToDelete={filesToDelete}
-                  onFileDeleted={() => {
-                    setFiles(
-                      [...files].filter((f) => !filesToDelete.includes(f))
-                    );
-                    setFilesToDelete([]);
-                  }}
-                />
-              </>
-            )}
+          <HStack justifyContent="space-between">
+            <HStack>
+              <UploadButton
+                onUpload={(uploadedFiles) => {
+                  setFiles([...files].concat(uploadedFiles));
+                }}
+              />
+              {filesToDelete.length > 0 && (
+                <>
+                  <DeleteButton
+                    isOpen={isDeleteButtonOpen}
+                    filesToDelete={filesToDelete}
+                    onFileDeleted={() => {
+                      setFiles(
+                        [...files].filter((f) => !filesToDelete.includes(f))
+                      );
+                      setFilesToDelete([]);
+                    }}
+                  />
+                </>
+              )}
+            </HStack>
+            <DiskUsageBox />
           </HStack>
         </GridItem>
       </Grid>

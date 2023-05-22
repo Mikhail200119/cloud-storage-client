@@ -1,14 +1,11 @@
 import {
-  Button,
   Modal,
   ModalBody,
   ModalCloseButton,
   ModalContent,
-  ModalFooter,
   ModalHeader,
   ModalOverlay,
   Spinner,
-  Image,
   AspectRatio,
   Box,
   Text,
@@ -21,6 +18,7 @@ import DownloadButton from "./DownloadButton";
 import axios from "axios";
 import fileDownload from "js-file-download";
 import { useNavigate } from "react-router-dom";
+import formatBytes from "../SizeCalculation";
 
 interface Props {
   isUnzipFile?: boolean;
@@ -112,6 +110,7 @@ const FileContentViewer = ({
         <ModalHeader backgroundColor="blackAlpha.300">
           <HStack>
             <Text>{file.name}</Text>
+            <Text>Size: {formatBytes(file.sizeInBytes)}</Text>
             {
               <DownloadButton
                 onClick={() => {
